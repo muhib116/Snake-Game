@@ -14,10 +14,8 @@ class MyAudio{
     }
     
     play(){
-        // this.audioElement.addEventListener("canplaythrough", event => {
-            this.duration = this.audioElement.duration;
-            this.audioElement.play();
-        // });
+        this.duration = this.audioElement.duration;
+        this.audioElement.play();
     }
 }
 
@@ -25,8 +23,9 @@ class MyAudio{
 let canvas   = document.getElementById('canvas');
 let context  = canvas.getContext('2d');
 
-let canvasBG       = '#414141';
-let canvasDangerBG = 'orangered';
+// let canvasBG       = '#414141';
+let canvasBG       = ['#414141', '#03a9f4'];
+let canvasDangerBG = 'red';
 
 let width    = 400;
 let height   = 400;
@@ -34,26 +33,16 @@ let gameSpeedControll = 0;
 
 canvas.width  = width;
 canvas.height = height;
-canvas.style.backgroundColor = canvasBG;
 
 
 class Snake{
     constructor(defaultSnakeLength=5)
     {
         this.isPause            = false;
-        this.gameSpeed          = 50;
+        this.defaultSpeed       = 40;
         this.defaultSnakeLength = defaultSnakeLength;
         this.snakeParts         = [];
         this.size               = 20;
-        
-        this.snakeFillColor   = '#ff5733',
-        this.snakeStrokeColor = '#fff',
-    
-        this.snakeHeadFillColor   = 'yellow',
-        this.snakeHeadStrokeColor = '#ff5733',
-    
-        this.foodFillColor   = '#ffc300',
-        this.foodStrokeColor = '#fff'
 
         this.directionX        = 1;
         this.directionY        = 0;
@@ -67,14 +56,13 @@ class Snake{
             this.dieAudio      = new MyAudio('./audio/die.wav', 0.1);
             this.eatenAudio    = new MyAudio('./audio/eaten.wav', 1);
             this.level_upAudio = new MyAudio('./audio/level_up.wav', 0.5);
-            this.game_overAudio = new MyAudio('./audio/game_over.wav', 1);
+            this.game_overAudio = new MyAudio('./audio/game_over.wav', 0.5);
         /* sound end */
-
+        
+        
         this.defaultSnake();
         this.keyControll();
-
         this.levelScroureMenegar();
-        this.HTMLElement();
     }
 
 
@@ -184,11 +172,14 @@ class Snake{
         let snakeHead = this.snakeParts[0];        
         let match     = this.snakeParts.filter(x=>JSON.stringify(x)==JSON.stringify(snakeHead));
         
+        let prevCanvasBGColor = this.canvasBG;
+
         if((this.snakeParts.length-1)>this.defaultSnakeLength && match.length>=2)
         {
             this.togglePause();
             
             canvas.style.backgroundColor = canvasDangerBG;
+
             this.updateLife(-1);
             this.snakeParts.length = this.defaultSnakeLength;
             this.dieAudio.play();
@@ -197,7 +188,7 @@ class Snake{
                 this.togglePause();
             }, this.dieAudio.duration*1000);
         }else{
-            canvas.style.backgroundColor = canvasBG;
+            canvas.style.backgroundColor = prevCanvasBGColor;
         }
     }
 
@@ -255,12 +246,16 @@ class Snake{
     /* work with level, scoure, life etc... start */
     levelScroureMenegar()
     {
-        this.level  = 1;
-        this.food   = Math.floor((this.gameSpeed/3)*this.level);
-        this.scoure = 0;
-        this.life   = 2;
-    }
+        this.level     = 1;
+        this.scoure    = 0;
+        this.life      = 2;
+        this.gameSpeed = this.defaultSpeed;
+        this.food      = Math.floor((this.gameSpeed/3)*this.level);
 
+        this.HTMLElement();
+        this.updateFood();
+        this.updateTheme();
+    }
 
 
     updateFood(){
@@ -269,10 +264,12 @@ class Snake{
         {
             this.updateLevel();
             this.food = Math.floor((this.gameSpeed/3)*this.level);
+            console.log(this.food);
         }
 
-        this.updateDom();
         this.updateScoure();
+        this.updateSpeed();
+        this.updateDom();
     }
 
     updateLevel(){
@@ -280,12 +277,27 @@ class Snake{
         this.life += this.level;
         this.level++;
         this.snakeParts.length = this.defaultSnakeLength;
+        this.gameSpeed = (this.defaultSpeed-this.level);
 
-        this.updateSpeed();
+        this.updateTheme();
     }
 
-    updateSpeed(){
-        this.gameSpeed -= 1;
+    updateTheme(){
+        this.canvasBG = `hsl(${20*this.level}deg 100% 50%)`;
+        canvas.style.backgroundColor = this.canvasBG;
+        this.snakeFillColor   = `hsl(${60*this.level}deg 100% 50%)`,
+        this.snakeStrokeColor = `hsl(${100*this.level}deg 50% 50%)`,
+    
+        this.snakeHeadFillColor   = `hsl(${60*this.level}deg 80% 40%)`,
+        this.snakeHeadStrokeColor = `hsl(${100*this.level}deg 100% 50%)`,
+    
+        this.foodFillColor   = `hsl(${60*this.level}deg 100% 50%)`,
+        this.foodStrokeColor = `hsl(${100*this.level}deg 100% 80%)`
+    }
+
+    updateSpeed(speed = -1){
+        this.gameSpeed += (this.gameSpeed>3) ? speed : 4;
+        console.log(this.gameSpeed);
     }
 
     updateScoure(){
@@ -314,7 +326,7 @@ class Snake{
         /* html element end */
         this.updateDom();
     }
-
+    
     updateDom(){
         this.LifeElement.innerText   = this.life;
         this.ScoureElement.innerText = this.scoure;
